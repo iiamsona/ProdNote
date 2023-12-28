@@ -1,0 +1,15 @@
+.form_input {
+    width: 350px;
+    height: 50px;
+    padding: 5px;
+    padding-left: 50px;
+    margin: 10px;
+    border: none;
+    border-radius: 15px;
+    background-color: #f0edff;
+  
+  }
+  
+  .form_input:focus {
+    outline-color: #9181F4; 
+  }
