@@ -1,89 +1,23 @@
 import { atom, useAtom } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flyAtom } from "./atoms";
 import { jsPDF } from "jspdf";
+import Icon from '/textures/icon.svg'
 
 const pictures = [
-  "DSC00680",
-  "DSC00933",
-  "DSC00966",
-  "DSC00983",
-  "DSC01011",
-  "DSC01040",
-  "DSC01064",
-  "DSC01071",
-  "DSC01103",
-  "DSC01145",
-  "DSC01420",
-  "DSC01461",
-  "DSC01489",
-  "DSC02031",
-  "DSC02064",
-  "DSC02069",
-  "DSC00680",
-  "DSC00933",
-  "DSC00966",
-  "DSC00983",
-  "DSC01011",
-  "DSC01040",
-  "DSC01064",
-  "DSC01071",
-  "DSC01103",
-  "DSC01145",
-  "DSC01420",
-  "DSC01461",
-  "DSC01489",
-  "DSC02031",
-  "DSC02064",
-  "DSC02069",
-  "DSC00680",
-  "DSC00933",
-  "DSC00966",
-  "DSC00983",
-  "DSC01011",
-  "DSC01040",
-  "DSC01064",
-  "DSC01071",
-  "DSC01103",
-  "DSC01145",
-  "DSC01420",
-  "DSC01461",
-  "DSC01489",
-  "DSC02031",
-  "DSC02064",
-  "DSC02069",
-  "DSC00680",
-  "DSC00933",
-  "DSC00966",
-  "DSC00983",
-  "DSC01011",
-  "DSC01040",
-  "DSC01064",
-  "DSC01071",
-  "DSC01103",
-  "DSC01145",
-  "DSC01420",
-  "DSC01461",
-  "DSC01489",
-  "DSC02031",
-  "DSC02064",
-  "DSC02069",
-  "DSC00680",
-  "DSC00933",
-  "DSC00966",
-  "DSC00983",
-  "DSC01011",
-  "DSC01040",
-  "DSC01064",
-  "DSC01071",
-  "DSC01103",
-  "DSC01145",
-  "DSC01420",
-  "DSC01461",
-  "DSC01489",
-  "DSC02031",
-  "DSC02064",
-  "DSC02069",
+"1",
+"2",
+"3",
+"4",
+"5",
+"6",
+"7",
+"8",
+"9",
+"10",
+"11",
+"12",
+"13",
 ];
 
 export const pageAtom = atom(0);
@@ -145,6 +79,7 @@ const generatePDF = async () => {
 const addImageToPDF = (pdf, imageName, isFirstPage) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "Anonymous"; // Add this to handle CORS issues
     img.src = `/textures/${imageName}.jpg`;
     
     img.onload = () => {
@@ -181,6 +116,7 @@ const addImageToPDF = (pdf, imageName, isFirstPage) => {
         pdf.addImage(img, 'JPEG', x, y, imgWidth, imgHeight);
         resolve();
       } catch (error) {
+        console.error("Error adding image to PDF:", error);
         reject(error);
       }
     };
@@ -195,15 +131,62 @@ const addImageToPDF = (pdf, imageName, isFirstPage) => {
 export const UI = () => {
   const [page, setPage] = useAtom(pageAtom);
   const [fly, setFly] = useAtom(flyAtom); // Use the shared fly state
+  const audioRef = useRef(null);
+  const firstRenderRef = useRef(true);
 
   useEffect(() => {
-    const audio = new Audio("/audios/page-flip-01a.mp3");
-    audio.play();
+    // Create audio element only once
+    if (!audioRef.current) {
+      audioRef.current = new Audio("/audios/page-flip-01a.mp3");
+    }
+    
+    // Skip playing audio on first render to avoid autoplay error
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false;
+      return;
+    }
+    
+    // Only try to play audio after user interaction
+    const playAudio = () => {
+      const playPromise = audioRef.current.play();
+      
+      // Handle the play promise to avoid uncaught errors
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          // Auto-play was prevented, this is expected on first load
+          console.log("Audio play prevented:", error);
+        });
+      }
+    };
+    
+    playAudio();
   }, [page]);
+
+  // Function to handle page change with audio
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    
+    // Try to play audio after user interaction
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      const playPromise = audioRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log("Audio play prevented:", error);
+        });
+      }
+    }
+  };
+
+  const [sidebar, setSidebar] = useState(false);
 
   return (
     <main className="pointer-events-none select-none z-10 fixed inset-0 flex justify-between flex-col">
       <div className="w-full overflow-auto pointer-events-auto flex justify-center">
+        <div className="sidebar flex items-center justify-center">
+        <img src={Icon} alt="Icon" className="h-[8vh] w-[8vw]" />
+        </div>
         <div className="overflow-x-scroll no-scrollbar w-full flex items-center gap-4 max-w-full p-10">
           {[...pages].map((_, index) => (
             <button
@@ -213,7 +196,7 @@ export const UI = () => {
                   ? "bg-white/90 text-black"
                   : "bg-black/30 text-white"
               }`}
-              onClick={() => setPage(index)}
+              onClick={() => handlePageChange(index)}
             >
               {index === 0 ? "Cover" : `Page ${index}`}
             </button>
@@ -224,7 +207,7 @@ export const UI = () => {
                 ? "bg-white/90 text-black"
                 : "bg-black/30 text-white"
             }`}
-            onClick={() => setPage(pages.length)}
+            onClick={() => handlePageChange(pages.length)}
           >
             Back Cover
           </button>
@@ -236,6 +219,8 @@ export const UI = () => {
           >
             Fly
           </button>
+          
+          {/* PDF Generation Button */}
           <button
             className="border-transparent hover:border-white transition-all duration-300 px-4 py-3 rounded-full text-lg uppercase shrink-0 border bg-black/30 text-white"
             onClick={generatePDF}
