@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { flyAtom } from "./atoms";
 import { jsPDF } from "jspdf";
 import Icon from '/textures/icon.svg'
+import { buttonNames } from './functionality';
 
 const pictures = [
 "1",
@@ -16,8 +17,7 @@ const pictures = [
 "9",
 "10",
 "11",
-"12",
-"13",
+"12"
 ];
 
 export const pageAtom = atom(0);
@@ -184,10 +184,27 @@ export const UI = () => {
   return (
     <main className="pointer-events-none select-none z-10 fixed inset-0 flex justify-between flex-col">
       <div className="w-full overflow-auto pointer-events-auto flex justify-center">
-        <div className="sidebar flex items-center justify-center">
-        <img src={Icon} alt="Icon" className="h-[8vh] w-[8vw]" />
+        <div className="sidebar flex items-center justify-center flex-col">
+        <img src={Icon} alt="Icon" className="h-[8vh] w-[8vw] mt-10 mb-5" />
+        <div className="h-[85vh] w-full">
+            <div className="flex flex-col gap-2 ml-2 overflow-y-auto no-scrollbar max-h-full pr-2" style={{ maxHeight: "100%" }}>
+              {buttonNames.map((button) => (
+                <button
+                  key={button.id}
+                  className={`border-transparent hover:border-white transition-all duration-300 px-4 py-3 rounded-full text-lg uppercase shrink-0 border ${
+                    (button.id === 'fly' && fly) || (button.id === 'back-cover' && page === pages.length)
+                      ? "bg-white/90 text-black"
+                      : "bg-black/30 text-white"
+                  }`}
+                  onClick={() => handleButtonClick(button.id)}
+                >
+                  {button.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="overflow-x-scroll no-scrollbar w-full flex items-center gap-4 max-w-full p-10">
+        <div className="overflow-x-scroll no-scrollbar w-full flex items-start gap-4 max-w-full p-10">
           {[...pages].map((_, index) => (
             <button
               key={index}
