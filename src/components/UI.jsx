@@ -2,22 +2,23 @@ import { atom, useAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { flyAtom } from "./atoms";
 import { jsPDF } from "jspdf";
-import Icon from '/textures/icon.svg'
-import { buttonNames } from './functionality';
+import Icon from "/textures/icon.svg";
+import { buttonNames } from "./functionality";
+import { Dialog } from './dialog';
 
 const pictures = [
-"1",
-"2",
-"3",
-"4",
-"5",
-"6",
-"7",
-"8",
-"9",
-"10",
-"11",
-"12"
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12",
 ];
 
 export const pageAtom = atom(0);
@@ -44,29 +45,29 @@ const generatePDF = async () => {
       unit: "mm",
       format: "a4",
     });
-    
+
     // Set PDF metadata
     pdf.setProperties({
       title: "My Book",
       subject: "Book Pages Collection",
       creator: "Book PDF Generator",
     });
-    
+
     let isFirstPage = true;
-    
+
     // Add cover page
     await addImageToPDF(pdf, "book-cover", isFirstPage);
     isFirstPage = false;
-    
+
     // Add all pages in order
     for (let i = 0; i < pictures.length; i++) {
       await addImageToPDF(pdf, pictures[i], isFirstPage);
       isFirstPage = false;
     }
-    
+
     // Add back cover
     await addImageToPDF(pdf, "book-back", isFirstPage);
-    
+
     // Save the PDF
     pdf.save("my-book.pdf");
     console.log("PDF generated successfully!");
@@ -81,23 +82,23 @@ const addImageToPDF = (pdf, imageName, isFirstPage) => {
     const img = new Image();
     img.crossOrigin = "Anonymous"; // Add this to handle CORS issues
     img.src = `/textures/${imageName}.jpg`;
-    
+
     img.onload = () => {
       try {
         if (!isFirstPage) {
           pdf.addPage();
         }
-        
+
         // Get page dimensions
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
-        
+
         // Calculate dimensions to cover the entire page
         const imgRatio = img.height / img.width;
         const pageRatio = pageHeight / pageWidth;
-        
+
         let imgWidth, imgHeight, x, y;
-        
+
         if (imgRatio > pageRatio) {
           // Image is taller than the page ratio, so fit to width
           imgWidth = pageWidth;
@@ -111,16 +112,16 @@ const addImageToPDF = (pdf, imageName, isFirstPage) => {
           x = (pageWidth - imgWidth) / 2; // Center horizontally
           y = 0;
         }
-        
+
         // Add image to fill the page (with bleed if necessary)
-        pdf.addImage(img, 'JPEG', x, y, imgWidth, imgHeight);
+        pdf.addImage(img, "JPEG", x, y, imgWidth, imgHeight);
         resolve();
       } catch (error) {
         console.error("Error adding image to PDF:", error);
         reject(error);
       }
     };
-    
+
     img.onerror = (error) => {
       console.error(`Error loading image ${imageName}:`, error);
       reject(error);
@@ -133,66 +134,120 @@ export const UI = () => {
   const [fly, setFly] = useAtom(flyAtom); // Use the shared fly state
   const audioRef = useRef(null);
   const firstRenderRef = useRef(true);
+  const [sidebar, setSidebar] = useState(false);
+  
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogContent, setDialogContent] = useState({
+    title: '',
+    content: '',
+    onConfirm: () => {}
+  });
 
   useEffect(() => {
     // Create audio element only once
     if (!audioRef.current) {
       audioRef.current = new Audio("/audios/page-flip-01a.mp3");
     }
-    
+
     // Skip playing audio on first render to avoid autoplay error
     if (firstRenderRef.current) {
       firstRenderRef.current = false;
       return;
     }
-    
+
     // Only try to play audio after user interaction
     const playAudio = () => {
       const playPromise = audioRef.current.play();
-      
+
       // Handle the play promise to avoid uncaught errors
       if (playPromise !== undefined) {
-        playPromise.catch(error => {
+        playPromise.catch((error) => {
           // Auto-play was prevented, this is expected on first load
           console.log("Audio play prevented:", error);
         });
       }
     };
-    
+
     playAudio();
   }, [page]);
 
   // Function to handle page change with audio
   const handlePageChange = (newPage) => {
     setPage(newPage);
-    
+
     // Try to play audio after user interaction
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       const playPromise = audioRef.current.play();
-      
+
       if (playPromise !== undefined) {
-        playPromise.catch(error => {
+        playPromise.catch((error) => {
           console.log("Audio play prevented:", error);
         });
       }
     }
   };
-
-  const [sidebar, setSidebar] = useState(false);
+  
+  // Function to handle button clicks and show appropriate dialog
+  const handleButtonClick = (buttonId) => {
+    // Define dialog content based on button ID
+    const dialogSettings = {
+      'fly': {
+        title: 'Fly Mode',
+        content: 'Are you sure you want to activate fly mode?',
+        onConfirm: () => setFly(!fly) // Toggle fly mode
+      },
+      'back-cover': {
+        title: 'Back Cover',
+        content: 'Go to back cover?',
+        onConfirm: () => handlePageChange(pages.length)
+      },
+      'generate-pdf': {
+        title: 'Generate PDF',
+        content: 'Do you want to generate a PDF of the book?',
+        onConfirm: () => generatePDF()
+      },
+      // Add other button IDs and their corresponding dialog content
+      'default': {
+        title: buttonId.charAt(0).toUpperCase() + buttonId.slice(1).replace('-', ' '),
+        content: `Do you want to proceed with ${buttonId.replace('-', ' ')}?`,
+        onConfirm: () => {
+          // Default action for other buttons
+          console.log(`${buttonId} action confirmed`);
+          
+          // If it's a page number, navigate to that page
+          if (buttonId.startsWith('page-')) {
+            const pageNum = parseInt(buttonId.replace('page-', ''));
+            if (!isNaN(pageNum)) {
+              handlePageChange(pageNum);
+            }
+          }
+        }
+      }
+    };
+    
+    // Set dialog content and open it
+    setDialogContent(dialogSettings[buttonId] || dialogSettings.default);
+    setDialogOpen(true);
+  };
 
   return (
     <main className="pointer-events-none select-none z-10 fixed inset-0 flex justify-between flex-col">
-      <div className="w-full overflow-auto pointer-events-auto flex justify-center">
-        <div className="sidebar flex items-center justify-center flex-col">
-        <img src={Icon} alt="Icon" className="h-[8vh] w-[8vw] mt-10 mb-5" />
-        <div className="h-[85vh] w-full">
-            <div className="flex flex-col gap-2 ml-2 overflow-y-auto no-scrollbar max-h-full pr-2" style={{ maxHeight: "100%" }}>
+      <div className="overflow-auto pointer-events-auto flex justify-start">
+        <div className="absolute flex items-center justify-start flex-col">
+          <img src={Icon} alt="Icon" className="h-[8vh] w-[8vw] mt-10 mb-5" />
+          <div className="h-[85vh] max-w-50">
+            <div
+              className="flex flex-col gap-2 ml-2 overflow-y-auto no-scrollbar max-h-full pr-2"
+              style={{ maxHeight: "100%" }}
+            >
               {buttonNames.map((button) => (
                 <button
                   key={button.id}
                   className={`border-transparent hover:border-white transition-all duration-300 px-4 py-3 rounded-full text-lg uppercase shrink-0 border ${
-                    (button.id === 'fly' && fly) || (button.id === 'back-cover' && page === pages.length)
+                    (button.id === "fly" && fly) ||
+                    (button.id === "back-cover" && page === pages.length)
                       ? "bg-white/90 text-black"
                       : "bg-black/30 text-white"
                   }`}
@@ -204,7 +259,8 @@ export const UI = () => {
             </div>
           </div>
         </div>
-        <div className="overflow-x-scroll no-scrollbar w-full flex items-start gap-4 max-w-full p-10">
+        
+        <div className="overflow-x-scroll no-scrollbar w-full flex items-start gap-4 max-w-full p-10 ml-36">
           {[...pages].map((_, index) => (
             <button
               key={index}
@@ -213,7 +269,7 @@ export const UI = () => {
                   ? "bg-white/90 text-black"
                   : "bg-black/30 text-white"
               }`}
-              onClick={() => handlePageChange(index)}
+              onClick={() => handleButtonClick(`page-${index}`)}
             >
               {index === 0 ? "Cover" : `Page ${index}`}
             </button>
@@ -224,7 +280,7 @@ export const UI = () => {
                 ? "bg-white/90 text-black"
                 : "bg-black/30 text-white"
             }`}
-            onClick={() => handlePageChange(pages.length)}
+            onClick={() => handleButtonClick("back-cover")}
           >
             Back Cover
           </button>
@@ -232,20 +288,29 @@ export const UI = () => {
             className={`border-transparent hover:border-white transition-all duration-300 px-4 py-3 rounded-full text-lg uppercase shrink-0 border ${
               fly ? "bg-white/90 text-black" : "bg-black/30 text-white"
             }`}
-            onClick={() => setFly(!fly)} // Toggle the fly state
+            onClick={() => handleButtonClick("fly")}
           >
             Fly
           </button>
-          
+
           {/* PDF Generation Button */}
           <button
             className="border-transparent hover:border-white transition-all duration-300 px-4 py-3 rounded-full text-lg uppercase shrink-0 border bg-black/30 text-white"
-            onClick={generatePDF}
+            onClick={() => handleButtonClick("generate-pdf")}
           >
             Generate PDF
           </button>
         </div>
       </div>
+      
+      {/* Dialog component */}
+      <Dialog 
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={dialogContent.title}
+        content={dialogContent.content}
+        onConfirm={dialogContent.onConfirm}
+      />
     </main>
   );
 };

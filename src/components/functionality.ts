@@ -13,4 +13,5 @@ export const buttonNames: ButtonConfig[] = [
   { id: 'pageNumbering', label: 'Page Numbering' },
   { id: 'pageMaterial', label: 'Page Material' },
   { id: 'pageBackground', label: 'Page Background' },
+  
 ];
