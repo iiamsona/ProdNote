@@ -135,6 +135,7 @@ export const UI = () => {
   const audioRef = useRef(null);
   const firstRenderRef = useRef(true);
   const [sidebar, setSidebar] = useState(false);
+  const [activeButton, setActiveButton] = useState(null);
   
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -191,6 +192,7 @@ export const UI = () => {
   
   // Function to handle button clicks and show appropriate dialog
   const handleButtonClick = (button) => {
+    setActiveButton(button);
     // Check if the buttonId is in the list of buttonNames
     const isDialogButton = buttonNames.some(buttons => button.id === button.id);
   
@@ -303,6 +305,7 @@ export const UI = () => {
         title={dialogContent.title}
         content={dialogContent.content}
         onConfirm={dialogContent.onConfirm}
+        button={activeButton}
       />
     </main>
   );
