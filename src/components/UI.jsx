@@ -4,7 +4,7 @@ import { flyAtom } from "./atoms";
 import { jsPDF } from "jspdf";
 import Icon from "/textures/icon.svg";
 import { buttonNames } from "./functionality";
-import { Dialog } from './dialog';
+import { Dialog } from './Dialog';
 
 const pictures = [
   "1",
@@ -190,47 +190,40 @@ export const UI = () => {
   };
   
   // Function to handle button clicks and show appropriate dialog
-  const handleButtonClick = (buttonId) => {
-    // Define dialog content based on button ID
-    const dialogSettings = {
-      'fly': {
-        title: 'Fly Mode',
-        content: 'Are you sure you want to activate fly mode?',
-        onConfirm: () => setFly(!fly) // Toggle fly mode
-      },
-      'back-cover': {
-        title: 'Back Cover',
-        content: 'Go to back cover?',
-        onConfirm: () => handlePageChange(pages.length)
-      },
-      'generate-pdf': {
-        title: 'Generate PDF',
-        content: 'Do you want to generate a PDF of the book?',
-        onConfirm: () => generatePDF()
-      },
-      // Add other button IDs and their corresponding dialog content
-      'default': {
-        title: buttonId.charAt(0).toUpperCase() + buttonId.slice(1).replace('-', ' '),
-        content: `Do you want to proceed with ${buttonId.replace('-', ' ')}?`,
+  const handleButtonClick = (button) => {
+    // Check if the buttonId is in the list of buttonNames
+    const isDialogButton = buttonNames.some(buttons => button.id === button.id);
+  
+    if (isDialogButton) {
+      const dialogSettings = {
+        title: button.label.charAt(0).toUpperCase() + button.label.slice(1).replace('-', ' ').toLowerCase(),
+        content: `Do you want to proceed with ${button.label.replace('-', ' ').toLowerCase()}?`,
         onConfirm: () => {
-          // Default action for other buttons
-          console.log(`${buttonId} action confirmed`);
-          
-          // If it's a page number, navigate to that page
-          if (buttonId.startsWith('page-')) {
-            const pageNum = parseInt(buttonId.replace('page-', ''));
-            if (!isNaN(pageNum)) {
-              handlePageChange(pageNum);
-            }
-          }
+          console.log(`${button.label.toLowerCase()} action confirmed`);
+          setDialogOpen(false);
         }
+      };
+  
+      setDialogContent(dialogSettings);
+      setDialogOpen(true);
+      return;
+    }
+  
+    // Handle non-dialog buttons directly
+    if (buttonId.startsWith('page-')) {
+      const pageNum = parseInt(buttonId.replace('page-', ''));
+      if (!isNaN(pageNum)) {
+        handlePageChange(pageNum);
       }
-    };
-    
-    // Set dialog content and open it
-    setDialogContent(dialogSettings[buttonId] || dialogSettings.default);
-    setDialogOpen(true);
+    } else if (buttonId === "back-cover") {
+      handlePageChange(pages.length);
+    } else if (buttonId === "fly") {
+      setFly(!fly);
+    } else if (buttonId === "generate-pdf") {
+      generatePDF();
+    }
   };
+  
 
   return (
     <main className="pointer-events-none select-none z-10 fixed inset-0 flex justify-between flex-col">
@@ -251,7 +244,7 @@ export const UI = () => {
                       ? "bg-white/90 text-black"
                       : "bg-black/30 text-white"
                   }`}
-                  onClick={() => handleButtonClick(button.id)}
+                  onClick={() => handleButtonClick(button) }
                 >
                   {button.label}
                 </button>

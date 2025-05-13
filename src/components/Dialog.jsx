@@ -33,8 +33,8 @@ export const Dialog = ({ isOpen, onClose, title, content, onConfirm }) => {
         </div>
         
         <div className="mb-6">
-          <input type="text" />
           <p className=' text-white'>{content}</p>
+          <input type="text" />
         </div>
         
         <div className="flex justify-end space-x-2">
