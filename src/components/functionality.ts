@@ -13,6 +13,6 @@ export const buttonNames: ButtonConfig[] = [
   { id: 'pageColor', label: 'Page Color', func:'color'  },
   { id: 'pageNumbering', label: 'Page Numbering', func:'number' },
   { id: 'pageMaterial', label: 'Page Material', func:'select'  },
-  { id: 'pageBackground', label: 'Page Background', func:'select' },
-  
+  { id: 'pageBackground', label: 'Page Background', func:'upload' },
+  { id: 'notebookSize', label: 'Notebook Size', func:'select'  },
 ];

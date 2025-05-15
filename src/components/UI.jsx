@@ -193,38 +193,43 @@ export const UI = () => {
   // Function to handle button clicks and show appropriate dialog
   const handleButtonClick = (button) => {
     setActiveButton(button);
-    // Check if the buttonId is in the list of buttonNames
-    const isDialogButton = buttonNames.some(buttons => button.id === button.id);
+  
+    // If it's a string like "page-2" or "fly"
+    if (typeof button === 'string') {
+      if (button.startsWith('page-')) {
+        const pageNum = parseInt(button.replace('page-', ''));
+        if (!isNaN(pageNum)) {
+          handlePageChange(pageNum);
+        }
+      } else if (button === "back-cover") {
+        handlePageChange(pages.length);
+      } else if (button === "fly") {
+        setFly(!fly);
+      } else if (button === "generate-pdf") {
+        generatePDF();
+      }
+      return;
+    }
+  
+    // Otherwise, assume it's a dialog-style button object
+    const isDialogButton = buttonNames.some(btn => btn.id === button.id);
   
     if (isDialogButton) {
+      const label = button.label || '';
       const dialogSettings = {
-        title: button.label.charAt(0).toUpperCase() + button.label.slice(1).replace('-', ' ').toLowerCase(),
-        content: `Do you want to proceed with ${button.label.replace('-', ' ').toLowerCase()}?`,
+        title: label.charAt(0).toUpperCase() + label.slice(1).replace('-', ' ').toLowerCase(),
+        content: `Do you want to proceed with ${label.replace('-', ' ').toLowerCase()}?`,
         onConfirm: () => {
-          console.log(`${button.label.toLowerCase()} action confirmed`);
+          console.log(`${label.toLowerCase()} action confirmed`);
           setDialogOpen(false);
         }
       };
   
       setDialogContent(dialogSettings);
       setDialogOpen(true);
-      return;
-    }
-  
-    // Handle non-dialog buttons directly
-    if (buttonId.startsWith('page-')) {
-      const pageNum = parseInt(buttonId.replace('page-', ''));
-      if (!isNaN(pageNum)) {
-        handlePageChange(pageNum);
-      }
-    } else if (buttonId === "back-cover") {
-      handlePageChange(pages.length);
-    } else if (buttonId === "fly") {
-      setFly(!fly);
-    } else if (buttonId === "generate-pdf") {
-      generatePDF();
     }
   };
+  
   
 
   return (
